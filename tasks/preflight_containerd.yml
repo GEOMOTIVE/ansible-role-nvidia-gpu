@@ -1,0 +1,42 @@
+---
+- name: NVIDIA containerd | Require containerd to be installed
+  ansible.builtin.stat:
+    path: /lib/systemd/system/containerd.service
+  register: nvidia_containerd_unit
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Assert containerd is present
+  ansible.builtin.assert:
+    that:
+      - nvidia_containerd_unit.stat.exists
+    fail_msg: >-
+      containerd must be installed before the nvidia_containerd phase
+      (for example by Kubespray).
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Require NVIDIA driver kernel module
+  ansible.builtin.stat:
+    path: "{{ nvidia_driver_proc_path }}"
+  register: nvidia_containerd_driver_proc
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Assert NVIDIA driver is loaded
+  ansible.builtin.assert:
+    that:
+      - nvidia_containerd_driver_proc.stat.exists
+    fail_msg: >-
+      NVIDIA driver must be installed and loaded before the nvidia_containerd
+      phase. Run the nvidia_driver tag first.
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu

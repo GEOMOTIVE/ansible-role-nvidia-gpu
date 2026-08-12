@@ -1,0 +1,24 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check containerd config contains mock runtime marker
+      ansible.builtin.command:
+        cmd: grep -F "# configured-by-molecule-nvidia-ctk-mock" /etc/containerd/config.toml
+      register: nvidia_containerd_config_marker
+      changed_when: false
+
+    - name: Assert nvidia-smi still works
+      ansible.builtin.command:
+        cmd: nvidia-smi -L
+      register: nvidia_smi_verify
+      changed_when: false
+      failed_when: nvidia_smi_verify.rc != 0
+
+    - name: Assert containerd is running
+      ansible.builtin.command:
+        cmd: systemctl is-active containerd
+      register: nvidia_containerd_active
+      changed_when: false
+      failed_when: nvidia_containerd_active.stdout | trim != "active"

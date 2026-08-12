@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+MARKER="# configured-by-molecule-nvidia-ctk-mock"
+CONFIG="/etc/containerd/config.toml"
+
+if [[ "${1:-}" == "runtime" && "${2:-}" == "configure" ]]; then
+  if [[ -f "${CONFIG}" ]] && grep -q "${MARKER}" "${CONFIG}"; then
+    exit 0
+  fi
+  mkdir -p "$(dirname "${CONFIG}")"
+  if [[ ! -f "${CONFIG}" ]]; then
+    printf '%s\n' 'version = 2' > "${CONFIG}"
+  fi
+  printf '\n%s\n' "${MARKER}" >> "${CONFIG}"
+  exit 0
+fi
+
+echo "unsupported nvidia-ctk mock invocation: $*" >&2
+exit 1

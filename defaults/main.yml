@@ -1,0 +1,28 @@
+---
+
+nvidia_cuda_keyring_url: >-
+  https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+nvidia_cuda_keyring_package: cuda-keyring_1.1-1_all.deb
+# Optional sha256 checksum for the CUDA keyring package (sha256:...).
+nvidia_cuda_keyring_checksum: ""
+
+nvidia_driver_pinning_package: nvidia-driver-pinning-580
+nvidia_driver_package: nvidia-driver-580
+nvidia_driver_hold_packages:
+  - nvidia-driver-580
+  - nvidia-driver-pinning-580
+
+nvidia_persistenced_package: nvidia-persistenced
+nvidia_driver_proc_path: /proc/driver/nvidia/version
+nvidia_driver_reboot_required: true
+nvidia_driver_reboot_timeout: 600
+# Set to a positive integer to assert GPU count from nvidia-smi; 0 disables the check.
+nvidia_expected_gpu_count: 0
+
+nvidia_container_toolkit_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
+nvidia_container_toolkit_gpgkey_url: https://nvidia.github.io/libnvidia-container/gpgkey
+nvidia_container_toolkit_repo_url: >-
+  https://nvidia.github.io/libnvidia-container/stable/deb/{{ nvidia_container_toolkit_arch }}
+nvidia_container_toolkit_package: nvidia-container-toolkit
+nvidia_container_runtime: containerd
+nvidia_containerd_config_path: /etc/containerd/config.toml

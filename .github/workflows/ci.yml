@@ -1,0 +1,72 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@v25
+        with:
+          args: "."
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run yamllint
+        run: yamllint tasks/ defaults/ meta/ tests/ .github/ molecule/
+
+  syntax-check:
+    name: Ansible syntax check
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: pip install "ansible>=9"
+
+      - name: Syntax check test playbook
+        env:
+          ANSIBLE_ROLES_PATH: ..
+        run: ansible-playbook tests/test.yml -i tests/inventory --syntax-check
+
+  molecule:
+    name: Molecule (containerd idempotence)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install "ansible>=9" molecule "molecule-plugins[docker]"
+
+      - name: Run Molecule test
+        run: PATH="${{ github.workspace }}/.venv/bin:$PATH" molecule test -s default

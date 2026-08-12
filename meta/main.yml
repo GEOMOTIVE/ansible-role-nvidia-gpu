@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: nvidia_gpu
+  namespace: geomotive
+  author: Geomotive
+  description: Install NVIDIA GPU driver and container toolkit for Kubernetes GPU worker nodes
+  company: Geomotive
+  license: Apache-2.0
+
+  min_ansible_version: "2.16"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+
+  galaxy_tags:
+    - nvidia
+    - gpu
+    - kubernetes
+    - containerd
+
+dependencies: []

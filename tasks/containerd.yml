@@ -1,0 +1,123 @@
+---
+- name: NVIDIA containerd | Require supported platform
+  ansible.builtin.import_tasks: preflight.yml
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Require containerd and driver preconditions
+  ansible.builtin.import_tasks: preflight_containerd.yml
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Install gnupg
+  ansible.builtin.apt:
+    name: gnupg
+    state: present
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Download Container Toolkit repository key
+  ansible.builtin.get_url:
+    url: "{{ nvidia_container_toolkit_gpgkey_url }}"
+    dest: /tmp/nvidia-container-toolkit.gpg
+    mode: "0644"
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Install Container Toolkit repository keyring
+  ansible.builtin.command:
+    cmd: >-
+      gpg --dearmor --output /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+      /tmp/nvidia-container-toolkit.gpg
+    creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Add Container Toolkit apt repository
+  ansible.builtin.deb822_repository:
+    name: nvidia-container-toolkit
+    types: deb
+    uris: "{{ nvidia_container_toolkit_repo_url }}"
+    suites: /
+    components: []
+    signed_by: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    state: present
+    install_python_debian: true
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Install NVIDIA Container Toolkit
+  ansible.builtin.apt:
+    name: "{{ nvidia_container_toolkit_package }}"
+    state: present
+    update_cache: true
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Get containerd config checksum before configure
+  ansible.builtin.stat:
+    path: "{{ nvidia_containerd_config_path }}"
+    checksum_algorithm: sha256
+  register: nvidia_containerd_config_before
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Configure containerd runtime
+  ansible.builtin.command:
+    cmd: nvidia-ctk runtime configure --runtime={{ nvidia_container_runtime }}
+  register: nvidia_ctk_configure
+  changed_when: false
+  failed_when: nvidia_ctk_configure.rc != 0
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Get containerd config checksum after configure
+  ansible.builtin.stat:
+    path: "{{ nvidia_containerd_config_path }}"
+    checksum_algorithm: sha256
+  register: nvidia_containerd_config_after
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Restart containerd when runtime config changed
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: restarted
+  when: >-
+    nvidia_containerd_config_before.stat.checksum | default("")
+    != nvidia_containerd_config_after.stat.checksum | default("")
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Verify nvidia-smi still works after containerd configuration
+  ansible.builtin.command:
+    cmd: nvidia-smi -L
+  register: nvidia_smi_list
+  changed_when: false
+  failed_when: nvidia_smi_list.rc != 0
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu

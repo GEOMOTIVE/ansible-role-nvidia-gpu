@@ -1,0 +1,12 @@
+---
+- name: NVIDIA | Require supported platform
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+      - ansible_distribution == "Ubuntu"
+      - ansible_distribution_version is version("24.04", "==")
+      - ansible_architecture == "x86_64"
+    fail_msg: >-
+      ansible-role-nvidia-gpu supports Ubuntu 24.04 (Noble) x86_64 only.
+      Got {{ ansible_distribution }} {{ ansible_distribution_version }}
+      {{ ansible_architecture }}.

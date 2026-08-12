@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: Run NVIDIA containerd phase
+      ansible.builtin.include_role:
+        name: ansible-role-nvidia-gpu
+        tasks_from: containerd.yml

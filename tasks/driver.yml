@@ -1,0 +1,112 @@
+---
+- name: NVIDIA driver | Require supported platform
+  ansible.builtin.import_tasks: preflight.yml
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Download CUDA keyring package
+  ansible.builtin.get_url:
+    url: "{{ nvidia_cuda_keyring_url }}"
+    dest: "/tmp/{{ nvidia_cuda_keyring_package }}"
+    mode: "0644"
+    checksum: "{{ nvidia_cuda_keyring_checksum if (nvidia_cuda_keyring_checksum | default('') | length > 0) else omit }}"
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Install CUDA keyring package
+  ansible.builtin.apt:
+    deb: "/tmp/{{ nvidia_cuda_keyring_package }}"
+    state: present
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Install driver branch pinning package
+  ansible.builtin.apt:
+    name: "{{ nvidia_driver_pinning_package }}"
+    state: present
+    update_cache: true
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Install NVIDIA driver and persistenced
+  ansible.builtin.apt:
+    name:
+      - "{{ nvidia_driver_package }}"
+      - "{{ nvidia_persistenced_package }}"
+    state: present
+  register: nvidia_driver_install
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Hold driver packages against unattended upgrades
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ nvidia_driver_hold_packages }}"
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Check whether the NVIDIA kernel module is loaded
+  ansible.builtin.stat:
+    path: "{{ nvidia_driver_proc_path }}"
+  register: nvidia_driver_proc
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Reboot to load the NVIDIA kernel module
+  ansible.builtin.reboot:
+    reboot_timeout: "{{ nvidia_driver_reboot_timeout }}"
+  when:
+    - nvidia_driver_reboot_required | bool
+    - nvidia_driver_install.changed or not nvidia_driver_proc.stat.exists
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Enable and start nvidia-persistenced
+  ansible.builtin.systemd_service:
+    name: nvidia-persistenced
+    enabled: true
+    state: started
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Verify GPUs are visible to nvidia-smi
+  ansible.builtin.command:
+    cmd: nvidia-smi --query-gpu=name --format=csv,noheader
+  register: nvidia_smi_gpus
+  changed_when: false
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: NVIDIA driver | Assert expected GPU count
+  ansible.builtin.assert:
+    that:
+      - nvidia_smi_gpus.stdout_lines | length == nvidia_expected_gpu_count
+    fail_msg: >-
+      Expected {{ nvidia_expected_gpu_count }} GPU(s) from nvidia-smi, got
+      {{ nvidia_smi_gpus.stdout_lines | length }}: {{ nvidia_smi_gpus.stdout_lines }}
+  when: nvidia_expected_gpu_count | int > 0
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu

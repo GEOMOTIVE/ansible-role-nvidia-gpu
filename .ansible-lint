@@ -1,0 +1,7 @@
+---
+profile: min
+exclude_paths:
+  - .git/
+  - .github/
+  - .venv/
+  - molecule/

@@ -1,0 +1,63 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - python3
+          - systemd
+        state: present
+        update_cache: true
+
+    - name: Ensure mock NVIDIA driver proc directory exists
+      ansible.builtin.file:
+        path: /var/lib/molecule/nvidia
+        state: directory
+        mode: "0755"
+
+    - name: Ensure mock NVIDIA driver proc file exists
+      ansible.builtin.copy:
+        dest: /var/lib/molecule/nvidia/version
+        mode: "0644"
+        content: |
+          NVRM version: Mock NVIDIA driver for Molecule
+
+    - name: Install mock GPU and container toolkit commands
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0755"
+      loop:
+        - src: usr/local/bin/nvidia-smi
+          dest: /usr/local/bin/nvidia-smi
+        - src: usr/local/bin/nvidia-ctk
+          dest: /usr/local/bin/nvidia-ctk
+
+    - name: Install containerd
+      ansible.builtin.apt:
+        name: containerd
+        state: present
+
+    - name: Enable and start containerd
+      ansible.builtin.systemd_service:
+        name: containerd
+        enabled: true
+        state: started
+
+    - name: Ensure containerd config directory exists
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        mode: "0755"
+
+    - name: Ensure containerd config exists
+      ansible.builtin.copy:
+        dest: /etc/containerd/config.toml
+        mode: "0644"
+        content: |
+          version = 2

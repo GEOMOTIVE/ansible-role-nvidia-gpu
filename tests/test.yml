@@ -1,0 +1,7 @@
+---
+# Minimal syntax-check playbook for ansible-role-nvidia-gpu.
+# Run from repo root: ANSIBLE_ROLES_PATH=.. ansible-playbook -i tests/inventory tests/test.yml --syntax-check
+- name: Test ansible-role-nvidia-gpu role
+  hosts: local
+  roles:
+    - ansible-role-nvidia-gpu

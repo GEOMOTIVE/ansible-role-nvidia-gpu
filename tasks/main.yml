@@ -1,0 +1,14 @@
+---
+- name: Include NVIDIA driver tasks
+  ansible.builtin.import_tasks: driver.yml
+  tags:
+    - nvidia
+    - nvidia_driver
+    - gpu
+
+- name: Include NVIDIA containerd tasks
+  ansible.builtin.import_tasks: containerd.yml
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
