@@ -1,8 +1,22 @@
 ---
 - name: NVIDIA containerd | Require containerd to be installed
   ansible.builtin.stat:
-    path: /lib/systemd/system/containerd.service
-  register: nvidia_containerd_unit
+    path: "{{ item }}"
+  register: nvidia_containerd_unit_stat
+  loop:
+    - /etc/systemd/system/containerd.service
+    - /lib/systemd/system/containerd.service
+    - /usr/lib/systemd/system/containerd.service
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
+- name: NVIDIA containerd | Set containerd unit presence fact
+  ansible.builtin.set_fact:
+    nvidia_containerd_unit:
+      stat:
+        exists: "{{ nvidia_containerd_unit_stat.results | selectattr('stat.exists') | list | length > 0 }}"
   tags:
     - nvidia
     - nvidia_containerd
