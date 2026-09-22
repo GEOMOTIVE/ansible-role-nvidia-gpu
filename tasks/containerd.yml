@@ -43,6 +43,15 @@
     - nvidia_containerd
     - gpu
 
+- name: NVIDIA containerd | Ensure Container Toolkit keyring is readable by apt
+  ansible.builtin.file:
+    path: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    mode: "0644"
+  tags:
+    - nvidia
+    - nvidia_containerd
+    - gpu
+
 - name: NVIDIA containerd | Add Container Toolkit apt repository
   ansible.builtin.deb822_repository:
     name: nvidia-container-toolkit
