@@ -28,6 +28,7 @@ Supports two tagged phases for Kubernetes bootstrap workflows:
 | `nvidia_driver_reboot_timeout` | Reboot wait timeout (seconds) | `600` |
 | `nvidia_cuda_keyring_checksum` | Optional `sha256:…` checksum for the CUDA keyring `.deb` | `""` |
 | `nvidia_container_runtime` | Runtime for `nvidia-ctk` | `containerd` |
+| `nvidia_containerd_configure_runtime` | Run `nvidia-ctk runtime configure`; set `false` when Kubespray (`containerd_additional_runtimes`) owns the containerd config | `true` |
 | `nvidia_containerd_config_path` | containerd config file checked for changes | `/etc/containerd/config.toml` |
 | `nvidia_driver_proc_path` | Path checked to confirm driver module is loaded | `/proc/driver/nvidia/version` |
 

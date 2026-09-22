@@ -77,48 +77,59 @@
     - nvidia_containerd
     - gpu
 
-- name: NVIDIA containerd | Get containerd config checksum before configure
-  ansible.builtin.stat:
-    path: "{{ nvidia_containerd_config_path }}"
-    checksum_algorithm: sha256
-  register: nvidia_containerd_config_before
+# Set nvidia_containerd_configure_runtime: false when another tool owns the
+# containerd config (e.g. Kubespray via containerd_additional_runtimes): it
+# regenerates config.toml from its template, and a runtime added here would be
+# dropped on the next run while the two keep overwriting each other.
+- name: NVIDIA containerd | Configure containerd runtime via nvidia-ctk
+  when: nvidia_containerd_configure_runtime | bool
   tags:
     - nvidia
     - nvidia_containerd
     - gpu
+  block:
+    - name: NVIDIA containerd | Get containerd config checksum before configure
+      ansible.builtin.stat:
+        path: "{{ nvidia_containerd_config_path }}"
+        checksum_algorithm: sha256
+      register: nvidia_containerd_config_before
+      tags:
+        - nvidia
+        - nvidia_containerd
+        - gpu
 
-- name: NVIDIA containerd | Configure containerd runtime
-  ansible.builtin.command:
-    cmd: nvidia-ctk runtime configure --runtime={{ nvidia_container_runtime }}
-  register: nvidia_ctk_configure
-  changed_when: false
-  failed_when: nvidia_ctk_configure.rc != 0
-  tags:
-    - nvidia
-    - nvidia_containerd
-    - gpu
+    - name: NVIDIA containerd | Configure containerd runtime
+      ansible.builtin.command:
+        cmd: nvidia-ctk runtime configure --runtime={{ nvidia_container_runtime }}
+      register: nvidia_ctk_configure
+      changed_when: false
+      failed_when: nvidia_ctk_configure.rc != 0
+      tags:
+        - nvidia
+        - nvidia_containerd
+        - gpu
 
-- name: NVIDIA containerd | Get containerd config checksum after configure
-  ansible.builtin.stat:
-    path: "{{ nvidia_containerd_config_path }}"
-    checksum_algorithm: sha256
-  register: nvidia_containerd_config_after
-  tags:
-    - nvidia
-    - nvidia_containerd
-    - gpu
+    - name: NVIDIA containerd | Get containerd config checksum after configure
+      ansible.builtin.stat:
+        path: "{{ nvidia_containerd_config_path }}"
+        checksum_algorithm: sha256
+      register: nvidia_containerd_config_after
+      tags:
+        - nvidia
+        - nvidia_containerd
+        - gpu
 
-- name: NVIDIA containerd | Restart containerd when runtime config changed
-  ansible.builtin.systemd_service:
-    name: containerd
-    state: restarted
-  when: >-
-    nvidia_containerd_config_before.stat.checksum | default("")
-    != nvidia_containerd_config_after.stat.checksum | default("")
-  tags:
-    - nvidia
-    - nvidia_containerd
-    - gpu
+    - name: NVIDIA containerd | Restart containerd when runtime config changed
+      ansible.builtin.systemd_service:
+        name: containerd
+        state: restarted
+      when: >-
+        nvidia_containerd_config_before.stat.checksum | default("")
+        != nvidia_containerd_config_after.stat.checksum | default("")
+      tags:
+        - nvidia
+        - nvidia_containerd
+        - gpu
 
 - name: NVIDIA containerd | Verify nvidia-smi still works after containerd configuration
   ansible.builtin.command:
